@@ -32,7 +32,7 @@
 
 <div class="form-card">
     <h2 id="baslik">Kuaför Randevu Sistemi</h2>
-    <div id="kuaforAdiBaslik">Kuaför Ekrem</div>
+    <div id="kuaforAdiBaslik">Kuaför Ethem</div>
 
     <div id="successBox" class="success-box">Randevu başarıyla eklendi!</div>
 
@@ -48,8 +48,8 @@
         <label>Telefon Numarası</label>
         <input type="text" name="telefon" placeholder="0555..." required>
 
-        <input type="hidden" id="sayfaAdi" name="sayfaAdi" value="Takip1">
-        <input type="hidden" id="gorunenAd" name="gorunenAd" value="Ekrem">
+        <input type="hidden" id="sayfaAdi" name="sayfaAdi" value="Takip2">
+        <input type="hidden" id="gorunenAd" name="gorunenAd" value="Ethem">
 
         <button type="submit">Randevu Ekle</button>
     </form>
@@ -66,7 +66,7 @@
 
 <script>
     const userSession = sessionStorage.getItem('kullanici');
-    let user = { sayfaAdi: "Takip1", gorunenAd: "Ekrem" };
+    let user = { sayfaAdi: "Takip2", gorunenAd: "Ethem" };
 
     if (userSession) {
         try {
@@ -76,7 +76,9 @@
         }
     }
 
-    let gorunenBaslik = user.gorunenAd || "Ekrem";
+    let storageKey = 'randevular_' + (user.gorunenAd || "Ethem");
+
+    let gorunenBaslik = user.gorunenAd || "Ethem";
     if (gorunenBaslik === "Ekrem") {
         gorunenBaslik = "Kuaför Ekrem";
     } else if (gorunenBaslik === "Ethem") {
@@ -87,15 +89,14 @@
 
     document.getElementById('baslik').innerText = gorunenBaslik + " Erkek Kuaförü";
     document.getElementById('kuaforAdiBaslik').innerText = gorunenBaslik;
-    document.getElementById('sayfaAdi').value = user.sayfaAdi || "Takip1";
-    document.getElementById('gorunenAd').value = user.gorunenAd || "Ekrem";
+    document.getElementById('sayfaAdi').value = user.sayfaAdi || "Takip2";
+    document.getElementById('gorunenAd').value = user.gorunenAd || "Ethem";
 
     function saatleriDoldur() {
         const select = document.getElementById('saatSelect');
         select.innerHTML = '<option value="">-- Saat Seçin --</option>';
 
-        // Daha önceden alınmış saatleri localStorage'dan çekelim
-        let kayitliRandevular = JSON.parse(localStorage.getItem('randevular_' + user.gorunenAd)) || [];
+        let kayitliRandevular = JSON.parse(localStorage.getItem(storageKey)) || [];
         let doluSaatler = kayitliRandevular.map(r => r.saat);
 
         const simdi = new Date();
@@ -119,7 +120,6 @@
 
             let formatliSaat = (zamanDilimi === "00:00" ? "24:00" : zamanDilimi);
 
-            // Eğer bu saat daha önce alındıysa listeye ekleme, atla
             if (doluSaatler.includes(formatliSaat)) {
                 continue;
             }
@@ -159,7 +159,7 @@
         const container = document.getElementById('yaklasanRandevularContainer');
         container.innerHTML = "";
 
-        let kayitliRandevular = JSON.parse(localStorage.getItem('randevular_' + user.gorunenAd)) || [];
+        let kayitliRandevular = JSON.parse(localStorage.getItem(storageKey)) || [];
 
         if (kayitliRandevular.length === 0) {
             container.innerHTML = '<div style="font-size: 12px; color: #777; margin-top: 8px; text-align: center;">Yaklaşan randevu bulunmuyor.</div>';
@@ -181,17 +181,16 @@
     }
 
     function randevuSil(index) {
-        let kayitliRandevular = JSON.parse(localStorage.getItem('randevular_' + user.gorunenAd)) || [];
+        let kayitliRandevular = JSON.parse(localStorage.getItem(storageKey)) || [];
         kayitliRandevular.splice(index, 1);
-        localStorage.setItem('randevular_' + user.gorunenAd, JSON.stringify(kayitliRandevular));
+        localStorage.setItem(storageKey, JSON.stringify(kayitliRandevular));
         randevulariGoster();
-        saatleriDoldur(); // Randevu silindiğinde saat tekrar seçilebilir olsun
+        saatleriDoldur();
     }
 
     saatleriDoldur();
     randevulariGoster();
 
-    // Make Webhook adresiniz
     const webhookUrl = "https://hook.eu1.make.com/qfd7ckxhj47m6mafaflimsxsdmgf7jp2";
 
     document.getElementById('randevuForm').addEventListener('submit', function(e) {
@@ -206,24 +205,24 @@
             body: JSON.stringify(data)
         })
         .then(response => {
-            let kayitliRandevular = JSON.parse(localStorage.getItem('randevular_' + user.gorunenAd)) || [];
+            let kayitliRandevular = JSON.parse(localStorage.getItem(storageKey)) || [];
             kayitliRandevular.push({ saat: data.saat, musteri: data.musteri_adi, telefon: data.telefon });
-            localStorage.setItem('randevular_' + user.gorunenAd, JSON.stringify(kayitliRandevular));
+            localStorage.setItem(storageKey, JSON.stringify(kayitliRandevular));
 
             document.getElementById('randevuForm').reset();
             saatleriDoldur(); 
             randevulariGoster();
             
-            document.getElementById('sayfaAdi').value = user.sayfaAdi || "Takip1";
-            document.getElementById('gorunenAd').value = user.gorunenAd || "Ekrem";
+            document.getElementById('sayfaAdi').value = user.sayfaAdi || "Takip2";
+            document.getElementById('gorunenAd').value = user.gorunenAd || "Ethem";
 
             document.getElementById('successBox').style.display = 'block';
             setTimeout(() => { document.getElementById('successBox').style.display = 'none'; }, 4000);
         })
         .catch(error => {
-            let kayitliRandevular = JSON.parse(localStorage.getItem('randevular_' + user.gorunenAd)) || [];
+            let kayitliRandevular = JSON.parse(localStorage.getItem(storageKey)) || [];
             kayitliRandevular.push({ saat: data.saat, musteri: data.musteri_adi, telefon: data.telefon });
-            localStorage.setItem('randevular_' + user.gorunenAd, JSON.stringify(kayitliRandevular));
+            localStorage.setItem(storageKey, JSON.stringify(kayitliRandevular));
             document.getElementById('randevuForm').reset();
             saatleriDoldur();
             randevulariGoster();
