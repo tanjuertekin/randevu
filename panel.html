@@ -161,8 +161,14 @@
 
         let kayitliRandevular = JSON.parse(localStorage.getItem(storageKey)) || [];
 
-        // Randevuları saate göre kronolojik olarak sıralıyoruz
-        kayitliRandevular.sort((a, b) => a.saat.localeCompare(b.saat));
+        // Randevuları dakika cinsinden kesin ve doğru bir şekilde kronolojik sıralıyoruz
+        kayitliRandevular.sort((a, b) => {
+            let [saatA, dakA] = a.saat.split(':').map(Number);
+            let [saatB, dakB] = b.saat.split(':').map(Number);
+            if (saatA === 24) saatA = 0;
+            if (saatB === 24) saatB = 0;
+            return (saatA * 60 + dakA) - (saatB * 60 + dakB);
+        });
         localStorage.setItem(storageKey, JSON.stringify(kayitliRandevular));
 
         if (kayitliRandevular.length === 0) {
@@ -195,8 +201,9 @@
     saatleriDoldur();
     randevulariGoster();
 
+    // Make.com'dan kopyaladığınız güncel adresi buraya tam olarak yapıştırın:
     const webhookUrl = "https://hook.eu1.make.com/k3mbmyozookgps0kgurv5iwafn1phvx3";
-
+                        
     document.getElementById('randevuForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -227,7 +234,7 @@
             let kayitliRandevular = JSON.parse(localStorage.getItem(storageKey)) || [];
             kayitliRandevular.push({ saat: data.saat, musteri: data.musteri_adi, telefon: data.telefon });
             localStorage.setItem(storageKey, JSON.stringify(kayitliRandevular));
-            document.getElementById('randevuForm').reset();
+            document.getElementById('randevuForm'.reset();
             saatleriDoldur();
             randevulariGoster();
         });
