@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kuaför Randevu Paneli</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px 0; }
+        .form-card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 350px; text-align: center; }
+        h2 { margin-bottom: 5px; color: #333; font-size: 20px; }
+        #kuaforAdiBaslik { color: #555; margin-bottom: 15px; font-size: 14px; font-weight: bold; }
+        label { display: block; text-align: left; margin-top: 8px; font-weight: bold; font-size: 13px; }
+        input, select { width: 100%; padding: 9px; margin: 4px 0 12px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        button { width: 100%; padding: 11px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: bold; }
+        button:hover { background: #218838; }
+        .success-box { display: none; background: #d4edda; color: #155724; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: bold; font-size: 13px; }
+        
+        /* Yaklaşan Randevular Alanı */
+        .randevu-listesi-baslik { text-align: left; margin-top: 20px; font-size: 15px; font-weight: bold; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .randevu-item { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 8px 10px; margin-top: 8px; font-size: 13px; }
+        .randevu-bilgi { text-align: left; font-style: italic; color: #333; }
+        .btn-grup { display: flex; gap: 5px; }
+        .btn-ara { background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; text-decoration: none; font-weight: bold; }
+        .btn-ara:hover { background: #0056b3; }
+        .btn-sil { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-sil:hover { background: #c82333; }
+
+        .logout { margin-top: 15px; font-size: 13px; }
+        .logout a { color: #dc3545; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="form-card">
+    <h2 id="baslik">Kuaför Randevu Sistemi</h2>
+    <div id="kuaforAdiBaslik">Kuaför Ekrem</div>
+
+    <div id="successBox" class="success-box">Randevu başarıyla eklendi!</div>
+
+    <form id="randevuForm">
+        <label>Randevu Saati</label>
+        <select name="saat" id="saatSelect" required>
+            <option value="">-- Saat Seçin --</option>
+        </select>
+
+        <label>Müşteri Adı</label>
+        <input type="text" name="musteri_adi" placeholder="Müşterinin adı soyadı" required>
+
+        <label>Telefon Numarası</label>
+        <input type="text" name="telefon" placeholder="0555..." required>
+
+        <input type="hidden" id="sayfaAdi" name="sayfaAdi" value="Takip1">
+        <input type="hidden" id="gorunenAd" name="gorunenAd" value="Ekrem">
+
+        <button type="submit">Randevu Ekle</button>
+    </form>
+
+    <div class="randevu-listesi-baslik">Yaklaşan Randevular</div>
+    <div id="yaklasanRandevularContainer">
+        <!-- Dinamik randevular buraya gelecek -->
+    </div>
+
+    <div class="logout">
+        <a href="#" onclick="cikisYap()">Çıkış Yap</a>
+    </div>
+</div>
+
+<script>
+    const userSession = sessionStorage.getItem('kullanici');
+    let user = { sayfaAdi: "Takip1", gorunenAd: "Ekrem" };
+
+    if (userSession) {
+        try {
+            user = JSON.parse(userSession);
+        } catch (e) {
+            console.error("Oturum okunamadı");
+        }
+    }
+
+    let gorunenBaslik = user.gorunenAd || "Ekrem";
+    if (gorunenBaslik === "Ekrem") {
+        gorunenBaslik = "Kuaför Ekrem";
+    } else if (gorunenBaslik === "Ethem") {
+        gorunenBaslik = "Kuaför Ethem";
+    } else if (gorunenBaslik === "Mustafa") {
+        gorunenBaslik = "Kuaför Mustafa";
+    }
+
+    document.getElementById('baslik').innerText = gorunenBaslik + " Erkek Kuaförü";
+    document.getElementById('kuaforAdiBaslik').innerText = gorunenBaslik;
+    document.getElementById('sayfaAdi').value = user.sayfaAdi || "Takip1";
+    document.getElementById('gorunenAd').value = user.gorunenAd || "Ekrem";
+
+    function saatleriDoldur() {
+        const select = document.getElementById('saatSelect');
+        select.innerHTML = '<option value="">-- Saat Seçin --</option>';
+
+        const simdi = new Date();
+        const aktifSaat = simdi.getHours();
+        const aktifDakika = simdi.getMinutes();
+        const simdikiDakikaCinsinden = aktifSaat * 60 + aktifDakika;
+
+        let eklenenSaatSayisi = 0;
+
+        for (let dakika = 510; dakika <= 1440; dakika += 30) {
+            let saat = Math.floor(dakika / 60);
+            let dak = dakika % 60;
+
+            let saatStr = (saat < 10 ? '0' : '') + saat;
+            let dakStr = (dak < 10 ? '0' : '') + dak;
+            let zamanDilimi = saatStr + ":" + dakStr;
+
+            if (zamanDilimi === "24:00") {
+                zamanDilimi = "00:00";
+            }
+
+            if (dakika >= simdikiDakikaCinsinden || aktifSaat < 8) {
+                let option = document.createElement('option');
+                option.value = (zamanDilimi === "00:00" ? "24:00" : zamanDilimi);
+                option.textContent = zamanDilimi;
+                select.appendChild(option);
+                eklenenSaatSayisi++;
+            }
+        }
+
+        if (eklenenSaatSayisi === 0) {
+            for (let dakika = 510; dakika <= 1440; dakika += 30) {
+                let saat = Math.floor(dakika / 60);
+                let dak = dakika % 60;
+                let saatStr = (saat < 10 ? '0' : '') + saat;
+                let dakStr = (dak < 10 ? '0' : '') + dak;
+                let zamanDilimi = saatStr + ":" + dakStr;
+                if (zamanDilimi === "24:00") zamanDilimi = "00:00";
+
+                let option = document.createElement('option');
+                option.value = (zamanDilimi === "00:00" ? "24:00" : zamanDilimi);
+                option.textContent = zamanDilimi;
+                select.appendChild(option);
+            }
+        }
+    }
+
+    function randevulariGoster() {
+        const container = document.getElementById('yaklasanRandevularContainer');
+        container.innerHTML = "";
+
+        let kayitliRandevular = JSON.parse(localStorage.getItem('randevular_' + user.gorunenAd)) || [];
+
+        if (kayitliRandevular.length === 0) {
+            container.innerHTML = '<div style="font-size: 12px; color: #777; margin-top: 8px; text-align: center;">Yaklaşan randevu bulunmuyor.</div>';
+            return;
+        }
+
+        kayitliRandevular.forEach((r, index) => {
+            let div = document.createElement('div');
+            div.className = 'randevu-item';
+            div.innerHTML = `
+                <div class="randevu-bilgi"><b>${r.saat}</b> - ${r.musteri}</div>
+                <div class="btn-grup">
+                    <a href="tel:${r.telefon}" class="btn-ara">Ara</a>
+                    <button class="btn-sil" onclick="randevuSil(${index})">Sil</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function randevuSil(index) {
+        let kayitliRandevular = JSON.parse(localStorage.getItem('randevular_' + user.gorunenAd)) || [];
+        kayitliRandevular.splice(index, 1);
+        localStorage.setItem('randevular_' + user.gorunenAd, JSON.stringify(kayitliRandevular));
+        randevulariGoster();
+    }
+
+    saatleriDoldur();
+    randevulariGoster();
+
+    // Make Webhook adresiniz buraya eklendi
+    const webhookUrl = "https://hook.eu1.make.com/qfd7ckxhj47m6mafaflimsxsdmgf7jp2";
+
+    document.getElementById('randevuForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+
+        fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            let kayitliRandevular = JSON.parse(localStorage.getItem('randevular_' + user.gorunenAd)) || [];
+            kayitliRandevular.push({ saat: data.saat, musteri: data.musteri_adi, telefon: data.telefon });
+            localStorage.setItem('randevular_' + user.gorunenAd, JSON.stringify(kayitliRandevular));
+
+            document.getElementById('randevuForm').reset();
+            saatleriDoldur(); 
+            randevulariGoster();
+            
+            document.getElementById('sayfaAdi').value = user.sayfaAdi || "Takip1";
+            document.getElementById('gorunenAd').value = user.gorunenAd || "Ekrem";
+
+            document.getElementById('successBox').style.display = 'block';
+            setTimeout(() => { document.getElementById('successBox').style.display = 'none'; }, 4000);
+        })
+        .catch(error => {
+            let kayitliRandevular = JSON.parse(localStorage.getItem('randevular_' + user.gorunenAd)) || [];
+            kayitliRandevular.push({ saat: data.saat, musteri: data.musteri_adi, telefon: data.telefon });
+            localStorage.setItem('randevular_' + user.gorunenAd, JSON.stringify(kayitliRandevular));
+            randevulariGoster();
+        });
+    });
+
+    function cikisYap() {
+        sessionStorage.removeItem('kullanici');
+        window.location.href = "index.html";
+    }
+</script>
+
+</body>
+</html>

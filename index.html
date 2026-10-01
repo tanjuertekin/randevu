@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Berber Giriş Paneli</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #218838; }
+        .error { font-size: 14px; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>Berber Girişi</h2>
+    <input type="text" id="username" placeholder="Kullanıcı Adı">
+    <input type="password" id="password" placeholder="Şifre">
+    <button onclick="girisYap()">Giriş Yap</button>
+    <div id="errorMsg" class="error"></div>
+</div>
+
+<script>
+    // Google Apps Script Web App URL'ni buraya yapıştır:
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXXYoFT-Uc9dRZtYD4qP5OWOk2w1vJO7HBF17wpHhbNfKZ9dtATzJWWRI7QBXaO8uQ/exec";
+
+    function girisYap() {
+        const kAdi = document.getElementById('username').value.trim();
+        const sifre = document.getElementById('password').value.trim();
+        const errorMsg = document.getElementById('errorMsg');
+
+        if(!kAdi || !sifre) {
+            errorMsg.style.color = "red";
+            errorMsg.innerText = "Lütfen tüm alanları doldurun!";
+            return;
+        }
+        
+        errorMsg.style.color = "blue";
+        errorMsg.innerText = "Giriş yapılıyor, lütfen bekleyin...";
+
+        const formData = new URLSearchParams();
+        formData.append("kadi", kAdi);
+        formData.append("sifre", sifre);
+
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                sessionStorage.setItem('kullanici', JSON.stringify(data.user));
+                window.location.href = "panel.html"; 
+            } else {
+                errorMsg.style.color = "red";
+                errorMsg.innerText = data.message;
+            }
+        })
+        .catch(err => {
+            errorMsg.style.color = "red";
+            errorMsg.innerText = "Bağlantı hatası oluştu.";
+        });
+    }
+</script>
+
+</body>
+</html>
