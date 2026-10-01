@@ -94,6 +94,10 @@
         const select = document.getElementById('saatSelect');
         select.innerHTML = '<option value="">-- Saat Seçin --</option>';
 
+        // Daha önceden alınmış saatleri localStorage'dan çekelim
+        let kayitliRandevular = JSON.parse(localStorage.getItem('randevular_' + user.gorunenAd)) || [];
+        let doluSaatler = kayitliRandevular.map(r => r.saat);
+
         const simdi = new Date();
         const aktifSaat = simdi.getHours();
         const aktifDakika = simdi.getMinutes();
@@ -113,9 +117,16 @@
                 zamanDilimi = "00:00";
             }
 
+            let formatliSaat = (zamanDilimi === "00:00" ? "24:00" : zamanDilimi);
+
+            // Eğer bu saat daha önce alındıysa listeye ekleme, atla
+            if (doluSaatler.includes(formatliSaat)) {
+                continue;
+            }
+
             if (dakika >= simdikiDakikaCinsinden || aktifSaat < 8) {
                 let option = document.createElement('option');
-                option.value = (zamanDilimi === "00:00" ? "24:00" : zamanDilimi);
+                option.value = formatliSaat;
                 option.textContent = zamanDilimi;
                 select.appendChild(option);
                 eklenenSaatSayisi++;
@@ -130,9 +141,14 @@
                 let dakStr = (dak < 10 ? '0' : '') + dak;
                 let zamanDilimi = saatStr + ":" + dakStr;
                 if (zamanDilimi === "24:00") zamanDilimi = "00:00";
+                let formatliSaat = (zamanDilimi === "00:00" ? "24:00" : zamanDilimi);
+
+                if (doluSaatler.includes(formatliSaat)) {
+                    continue;
+                }
 
                 let option = document.createElement('option');
-                option.value = (zamanDilimi === "00:00" ? "24:00" : zamanDilimi);
+                option.value = formatliSaat;
                 option.textContent = zamanDilimi;
                 select.appendChild(option);
             }
@@ -169,12 +185,13 @@
         kayitliRandevular.splice(index, 1);
         localStorage.setItem('randevular_' + user.gorunenAd, JSON.stringify(kayitliRandevular));
         randevulariGoster();
+        saatleriDoldur(); // Randevu silindiğinde saat tekrar seçilebilir olsun
     }
 
     saatleriDoldur();
     randevulariGoster();
 
-    // Make Webhook adresiniz buraya eklendi
+    // Make Webhook adresiniz
     const webhookUrl = "https://hook.eu1.make.com/qfd7ckxhj47m6mafaflimsxsdmgf7jp2";
 
     document.getElementById('randevuForm').addEventListener('submit', function(e) {
@@ -207,6 +224,8 @@
             let kayitliRandevular = JSON.parse(localStorage.getItem('randevular_' + user.gorunenAd)) || [];
             kayitliRandevular.push({ saat: data.saat, musteri: data.musteri_adi, telefon: data.telefon });
             localStorage.setItem('randevular_' + user.gorunenAd, JSON.stringify(kayitliRandevular));
+            document.getElementById('randevuForm').reset();
+            saatleriDoldur();
             randevulariGoster();
         });
     });
